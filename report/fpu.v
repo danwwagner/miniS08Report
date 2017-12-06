@@ -1,4 +1,4 @@
-// starter file for the FPU.  It handles all the reading of and writing to its registers
+// starter file for the FPU.  It handles all the reading of and writing to registers
 module fpu(clk, datain, dataout, FPUsel, addr, read, write);
 input clk, FPUsel, read, write;
 input [7:0] datain; // command or value being sent to the FPU
@@ -13,7 +13,7 @@ reg [1:0] outloc;   // index in the Res reg for next result out (on read)
 reg [31:0] Y,X,Res;
 reg prevreadval, prevwritecmd, prevwriteval;
 wire readval, readstatus, writecmd, writeval;
-wire readvalnegedge, writecmdposedge, writevalnegedge;  //write cmd is pos edge -- others neg edge
+wire readvalnegedge, writecmdposedge, writevalnegedge;
 assign readstatus = read & FPUsel & (addr==0);
 assign readval = read & FPUsel & (addr==1);
 assign writecmd = write & FPUsel & (addr==2);
@@ -39,7 +39,8 @@ always @(posedge clk)
       prevreadval <= readval;
       prevwritecmd <= writecmd;
       prevwriteval <= writeval;
-      inloc <= writevalnegedge ? inloc+1 : writecmdposedge&datain==1 ? 0 : writecmdposedge&datain==2 ? 4 : inloc;
+      inloc <= writevalnegedge ? inloc+1 : writecmdposedge&datain==1 ? 0 
+		: writecmdposedge&datain==2 ? 4 : inloc;
       outloc <= DivDone | MulDone ? 0 : readvalnegedge ? outloc+1 : outloc;
       Y[31:24] <= writeval&inloc==0 ? datain : Y[31:24];
       Y[23:16] <= writeval&inloc==0 ? 0 : writeval&inloc==1 ? datain : Y[23:16];
@@ -74,12 +75,15 @@ assign Step = DivState;
 assign Start = writecmdposedge&datain==3;
 always @(posedge clk)
    begin
-      DivState <= writecmdposedge&datain==1 ? 0 : Wait&!Start ? 0 : Step&Done ? 0 : Wait&Start ? 1 : DivState;
+      DivState <= writecmdposedge&datain==1 ? 0 : Wait&!Start ? 0 
+		: Step&Done ? 0 : Wait&Start ? 1 : DivState;
       S <= Wait&Start ? Y[31] ^ X[31] : S;
-      A <= Wait&Start ? {1'b0, 1'b1, Y[22:0]} : Step&!Neg ? {AmB[23:0], 1'b0} : Step&Neg ? {A[23:0], 1'b0} : A; // CHECK THIS
+      A <= Wait&Start ? {1'b0, 1'b1, Y[22:0]} : Step&!Neg ? {AmB[23:0], 1'b0} 
+	: Step&Neg ? {A[23:0], 1'b0} : A; // CHECK THIS
       B <= Wait&Start ? {1'b0, 1'b1, X[22:0]} : B;
       E <= Wait&Start ? Y[30:23] - X[30:23] + 127 + 24 : Step&!Done ? E - 1 : E; 
-      Q <= Wait&Start ? 0 : Step&!Done ? {Q[22:0], !Neg} : Step&Done&Rneed ? Q+Rneed : Q;
+      Q <= Wait&Start ? 0 : Step&!Done ? {Q[22:0], !Neg} 
+	: Step&Done&Rneed ? Q+Rneed : Q;
       DivDone <= Step&Done;
     end
 assign Done = Q[23];
@@ -103,12 +107,15 @@ assign mShift = MulState == 2;
 assign mStart = writecmdposedge&datain==4;
 always @(posedge clk)
    begin
-      MulState <= writecmdposedge&datain==1 ? 0 : mWait&mStart ? 1 : mStep&mDone ? mRneed ? 2 : 0 : mShift ? 0 : MulState;
+      MulState <= writecmdposedge&datain==1 ? 0 : mWait&mStart ? 1 
+		: mStep&mDone ? mRneed ? 2 : 0 : mShift ? 0 : MulState;
       mS <= mWait&mStart ? Y[31] ^ X[31] : mS; 
       mA <= Wait&mStart ? {1'b1, X[22:0]} : mStep ? {1'b0, mA[23:1]} : mA; 
       mB <= Wait&mStart ? {1'b1, Y[22:0]} : mB;
-      mE <= mWait&mStart ? X[30:23] + Y[30:23] - 127 - 24 : mStep&!mDone ? mE + 1 : mShift&Sneed ? mE + 1 : mE;  // 24 is the # of bits of mA 
-      P <= mWait&mStart ? 0 : mStep&!mDone ? {1'b0, P[24:1]} + {1'b0, {24{mA[0]}}&mB} : mStep&mDone&mRneed ? P + 1 : mShift&Sneed ? {1'b0, P[24:1]} : P; 
+      mE <= mWait&mStart ? X[30:23] + Y[30:23] - 127 - 24 : mStep&!mDone ? mE + 1 
+	: mShift&Sneed ? mE + 1 : mE;  // 24 is the # of bits of mA 
+      P <= mWait&mStart ? 0 : mStep&!mDone ? {1'b0, P[24:1]} + {1'b0, {24{mA[0]}}&mB} 
+	: mStep&mDone&mRneed ? P + 1 : mShift&Sneed ? {1'b0, P[24:1]} : P; 
       MulDone <= mStep&mDone&!mRneed ? 1 : mShift ? 1 : 0;
       Round <= mStep ? P[0] : Round;
       SBit <= mWait&mStart ? 0 : mStep ? (SBit | Round) : SBit; 
