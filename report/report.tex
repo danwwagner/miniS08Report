@@ -61,6 +61,7 @@ When performing arithmetic, the end result may require rounding.  Two main metho
 
 The data flow consists of several components and can be seen in the following figure.
  \begin{figure}[H]
+ 	\centering
  	\includegraphics[width=\linewidth,height=10cm,keepaspectratio]{dataflow.png}
  	\caption[Mini S08 Data Flow]{Data Flow of the Mini S08 Project (excluding FPU).}
  	\label{fig:arch}
@@ -84,21 +85,37 @@ The control signals coordinating these transactions will be discussed in the nex
 \section*{Control Units}
 The Mini S08's operation was modeled as a state machine with five states.  These states are shown in Figure 2.
  \begin{figure}[H]
+ 	\centering
 	\includegraphics[width=\linewidth,height=10cm,keepaspectratio]{s08_states.jpg}
 	\caption[Mini S08 State Machine Diagram]{State Machine for the Mini S08 Project.}
 	\label{fig:arch}
 \end{figure}
 
 \newpage
-Talk about the transitions and state diagram here.
+%Talk about the transitions and state diagram here.
+Reset is the initial state that the MiniS08 is in when programmed.  When the reset push button is pressed, the program returns to this state and transitions to state zero. State zero is where the instruction is fetched into the IR.  After fetching, the next state is state one.
+
+~\newline
+State one decodes the fetched instruction and transitions to different states depending on the address mode.  If the instruction is an Immediate, Inherent, Indexed, Relative, or one of the push instructions, then the instruction is completed in one cycle and the state transitions to the state zero.  Otherwise, additional cycles are required for complete the execution and flow transitions to state two.
+
+~\newline
+State two continues executing instructions that failed to take one cycle to complete.  If the instruction is an Extended or jump instruction, or an rts instruction, then another state is required to complete it (state three).  Otherwise, the instruction finishes and the state transitions back to state zero.
+
+~\newline
+State three, similar to state two, resumes instruction execution that failed to complete in the prior state(s).  
+
+~\newline
+State four
 \newpage
  \begin{figure}[H]
+ 	\centering
 	\includegraphics[width=\linewidth,height=10cm,keepaspectratio]{divide_states.jpg}
 	\caption[Mini S08 Division State Machine Diagram]{Divide State Machine for the Mini S08 Project.}
 	\label{fig:arch}
 \end{figure}
 
  \begin{figure}[H]
+ 	\centering
 	\includegraphics[width=\linewidth,height=10cm,keepaspectratio]{multiply_states.jpg}
 	\caption[Mini S08 Multiply State Machine Diagram]{Multiply State Machine for the Mini S08 Project.}
 	\label{fig:arch}
