@@ -7,6 +7,7 @@
 \usepackage{caption}
 \usepackage{float}
 \usepackage{array}
+\usepackage{verbatim}
 \setlength\bibitemsep{2\itemsep}
 \DeclareLanguageMapping{american}{american-apa}
 \addbibresource{bibliography.bib}
@@ -81,7 +82,7 @@ Input and output are coordinated between the buses and four modules: FPU, RAM, R
 ~\newline
 The control signals coordinating these transactions will be discussed in the next section.
 
-~\newline
+~\newpage
 \section*{Control Units}
 The Mini S08's operation was modeled as a state machine with five states.  These states are shown in Figure 2.
  \begin{figure}[H]
@@ -91,28 +92,23 @@ The Mini S08's operation was modeled as a state machine with five states.  These
 	\label{fig:arch}
 \end{figure}
 
-\newpage
 %Talk about the transitions and state diagram here.
 Reset is the initial state that the MiniS08 is in when programmed.  When the reset push button is pressed, the program returns to this state and transitions to state zero. State zero is where the instruction is fetched into the IR.  After fetching, the next state is state one.
 
 ~\newline
-State one decodes the fetched instruction and transitions to different states depending on the address mode.  If the instruction is an Immediate, Inherent, Indexed, Relative, or one of the push instructions, then the instruction is completed in one cycle and the state transitions to the state zero.  Otherwise, additional cycles are required for complete the execution and flow transitions to state two.
+State one decodes the fetched instruction and transitions to different states depending on the address mode.  If the instruction is an Immediate, Inherent, Indexed, Relative, or one of the push instructions, then the instruction is completed in one cycle and the system transitions to the state zero.  Otherwise, additional cycles are required for complete the execution and flow transitions to state two.
 
 ~\newline
-State two continues executing instructions that failed to take one cycle to complete.  If the instruction is an Extended or jump instruction, or an rts instruction, then another state is required to complete it (state three).  Otherwise, the instruction finishes and the state transitions back to state zero.
+State two continues executing instructions that failed to take one cycle to complete.  If the instruction is an Extended or jmp instruction, or an rts instruction, then another state is required to complete it (state three).  Otherwise, the instruction finishes and the system transitions back to state zero.
 
 ~\newline
-State three, similar to state two, resumes instruction execution that failed to complete in the prior state(s).  
+State three, similar to state two, resumes instruction execution that failed to complete in the prior state(s).  Most instructions finish executing here, but jsr requires transitioning to the final state.
 
 ~\newline
-State four
-\newpage
- \begin{figure}[H]
- 	\centering
-	\includegraphics[width=\linewidth,height=10cm,keepaspectratio]{divide_states.jpg}
-	\caption[Mini S08 Division State Machine Diagram]{Divide State Machine for the Mini S08 Project.}
-	\label{fig:arch}
-\end{figure}
+State four is required for the jsr instruction, as it requires four cycles to complete.  After completion, the system transitions back to state zero.
+
+~\newline ~\newline
+The diagram in Figure 2 fulfilled the operating requirements for the S08 without the FPU.  When the FPU was added to the project, two additional state diagrams were required: one for multiplication, and one for addition.  Shown below, the multiply state machine required three states depending on the operation's result.
 
  \begin{figure}[H]
  	\centering
@@ -120,10 +116,66 @@ State four
 	\caption[Mini S08 Multiply State Machine Diagram]{Multiply State Machine for the Mini S08 Project.}
 	\label{fig:arch}
 \end{figure}
-\section*{Conclusion}
 
+The multiply state machine begins in the waiting state.  The FPU waits for all data to be input from the S08 before beginning the operation.  The FPU receives both numbers to multiply and the operation to perform from the S08 data bus.  Once all information is received, the start signal enables and the system transitions to the step state.
+
+~\newline
+Most of the work is done within the step state.  On each iteration, a portion of the multiplication is performed (mainly, shifting and adding).  The system remains in this state until the multiplication operation is complete.  If rounding is required, the system transitions to the shift state and shifts the product right by one bit.  Otherwise, it returns to the waiting state and the cycle begins anew.
+
+\newpage
+The division state machine is simpler than either the multiplication or S08 machines.  It consists of two states, as shown in Figure 4.
+
+ \begin{figure}[H]
+	\centering
+	\includegraphics[width=\linewidth,height=10cm,keepaspectratio]{divide_states.jpg}
+	\caption[Mini S08 Division State Machine Diagram]{Divide State Machine for the Mini S08 Project.}
+	\label{fig:arch}
+\end{figure}
+
+The system remains in the waiting state like the multiply state. It waits for both floating point values and the operation to be entered.  Once these requirements are met, the system transitions into the step state.
+
+~\newline
+Very similarly to the multiplication operation, the step state is the main working state for division.  On each iteration, a portion of the operation is completed.  This state remains the active state until the division is completed.  At this point, any required rounding is performed and the system transitions back to the waiting state.
+
+\newpage
+\section*{Conclusion}
+The project was an overall success, as seen in the Figures 5-8.
+ \begin{figure}[H]
+	\centering
+	\includegraphics[width=\linewidth,height=10cm,keepaspectratio]{minis08_operation.PNG}
+	\caption[MiniS08 Operation Proof]{Proof of Mini S08 Functionality.}
+	\label{fig:arch}
+\end{figure}
+
+Initially, the project was daunting and required more work than thought.  Writing the register transfer notation (RTN) statements was simple from the data flow diagram provided.  Programming with Verilog and translating those statements proved another challenge, as the Altera Quartus II software enjoyed automatically optimizing code fragments away.  These optimizations resulted in bugs when testing and were usually resolved by fixing a variable declaration or logic error.
+
+~\newline
+The project is an excellent example of the overall design process of a computer.  First, we started with the data flow and configuring how to accomplish and coordinate the data lines.  From there, we developed the RTN.  Then, we translated the statements into Verilog and debugged the result.  Finally, we had our working computer.
+
+~\newline
+The only major change I would recommend is moving away from the Quartus II IDE.  It is not very useful with a majority of the bugs that we were facing (auto-optimization) and was not helpful when debugging.
+ \begin{figure}[H]
+	\centering
+	\includegraphics[width=\linewidth,height=10cm,keepaspectratio]{multiplication_fpu.PNG}
+\caption[MiniS08 Multiplication Proof]{Proof of Mini S08 Multiplication.}
+	\label{fig:arch}
+\end{figure}
+ \begin{figure}[H]
+	\centering
+	\includegraphics[width=\linewidth,height=10cm,keepaspectratio]{division_fpu.PNG}
+\caption[MiniS08 Division Proof]{Proof of Mini S08 Division.}
+	\label{fig:arch}
+\end{figure}
 \newpage
 \section*{References}
 1. IEEE Standard for Binary Floating-Point Arithmetic IEEE Std. 754-2008, 2008. 
+
+\newpage
+\section*{Source Code: S08}
+\verbatiminput{minis08.v}
+\newpage
+\section*{Source Code: FPU}
+\verbatiminput{fpu.v}
 \end{flushleft}
+
 \end{document}
